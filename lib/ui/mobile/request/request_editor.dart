@@ -30,6 +30,7 @@ import 'package:proxypin/network/http/content_type.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/http/http_headers.dart';
 import 'package:proxypin/network/http/http_client.dart';
+import 'package:proxypin/ui/component/env_var_highlight.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/ui/component/state_component.dart';
 import 'package:proxypin/ui/configuration.dart';
@@ -704,7 +705,7 @@ class _RequestLine extends StatefulWidget {
 }
 
 class _RequestLineState extends State<_RequestLine> {
-  TextEditingController requestUrl = TextEditingController(text: "");
+  EnvHighlightTextEditingController requestUrl = EnvHighlightTextEditingController(text: "");
   HttpMethod requestMethod = HttpMethod.get;
 
   @override
@@ -1201,7 +1202,8 @@ class KeyValState extends State<KeyValWidget> with AutomaticKeepAliveClientMixin
       const SizedBox(width: 8),
       Expanded(
         flex: 6,
-        child: Text(keyVal.value, style: const TextStyle(fontSize: 13), maxLines: 5, overflow: TextOverflow.ellipsis),
+        child: buildEnvHighlightText(context, keyVal.value,
+            style: const TextStyle(fontSize: 13), maxLines: 5, overflow: TextOverflow.ellipsis),
       ),
     ]);
   }
