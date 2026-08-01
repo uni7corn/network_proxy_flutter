@@ -20,7 +20,7 @@ import 'package:date_format/date_format.dart';
 import 'package:proxypin/ui/component/multi_window_compat.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_desktop_context_menu/flutter_desktop_context_menu.dart';
+import 'package:proxypin/ui/component/context_menu.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/network/bin/server.dart';
@@ -154,7 +154,7 @@ class _RequestWidgetState extends State<RequestWidget> {
             widget.multiSelectController.enterSelectionMode(widget.request.requestId);
           }
         },
-        onSecondaryTap: contextualMenu,
+        onSecondaryTapDown: (details) => contextualMenu(details),
         child: ListTile(
             minLeadingWidth: 5,
             textColor: requestColor,
@@ -218,79 +218,80 @@ class _RequestWidgetState extends State<RequestWidget> {
     return autoReadRequests.contains(widget.request.requestId) ? Colors.grey : null;
   }
 
-  void contextualMenu() {
-    popUpContextMenu(selectionMode && selectionCount > 1 ? _batchMenu() : _requestMenu());
+  void contextualMenu(TapDownDetails details) {
+    var menu = selectionMode && selectionCount > 1 ? _batchMenu() : _requestMenu();
+    showCustomContextMenu(context, details.globalPosition, menu);
   }
 
-  Menu _batchMenu() {
-    return Menu(items: [
+  List<ContextMenuItem> _batchMenu() {
+    return [
       _menuAction(localizations.repeat, _RequestMenuAction.batchRepeat),
       _menuAction(localizations.export, _RequestMenuAction.batchExport),
-      MenuItem.separator(),
+      ContextMenuItem.separator(),
       _menuAction(localizations.delete, _RequestMenuAction.batchDelete),
-      MenuItem.separator(),
+      ContextMenuItem.separator(),
       _menuAction(localizations.cancel, _RequestMenuAction.batchCancel),
-    ]);
+    ];
   }
 
-  Menu _requestMenu() {
-    return Menu(items: [
+  List<ContextMenuItem> _requestMenu() {
+    return [
       _menuAction(localizations.copyCurl, _RequestMenuAction.copyCurl),
-      MenuItem(label: localizations.copy, type: 'submenu', submenu: _copySubmenu()),
-      MenuItem.separator(),
+      ContextMenuItem.submenu(label: localizations.copy, submenu: _copySubmenu()),
+      ContextMenuItem.separator(),
       _menuAction(localizations.openNewWindow, _RequestMenuAction.openNewWindow),
-      MenuItem.separator(),
-      MenuItem(label: localizations.export, type: 'submenu', submenu: _exportSubmenu()),
-      MenuItem.separator(),
+      ContextMenuItem.separator(),
+      ContextMenuItem.submenu(label: localizations.export, submenu: _exportSubmenu()),
+      ContextMenuItem.separator(),
       _menuAction(localizations.repeat, _RequestMenuAction.repeat),
       _menuAction(localizations.customRepeat, _RequestMenuAction.customRepeat),
       _menuAction(localizations.editRequest, _RequestMenuAction.editRequest),
-      MenuItem.separator(),
+      ContextMenuItem.separator(),
       _menuAction(localizations.requestRewrite, _RequestMenuAction.requestRewrite),
       _menuAction(localizations.requestMap, _RequestMenuAction.requestMap),
       _menuAction(localizations.script, _RequestMenuAction.script),
-      MenuItem.separator(),
+      ContextMenuItem.separator(),
       _menuAction(localizations.favorite, _RequestMenuAction.favorite),
-      MenuItem(label: localizations.highlight, type: 'submenu', submenu: highlightMenu()),
-      MenuItem.separator(),
+      ContextMenuItem.submenu(label: localizations.highlight, submenu: highlightMenu()),
+      ContextMenuItem.separator(),
       _menuAction(localizations.select, _RequestMenuAction.select),
-      MenuItem.separator(),
+      ContextMenuItem.separator(),
       _menuAction(localizations.delete, _RequestMenuAction.delete),
-    ]);
+    ];
   }
 
-  Menu _copySubmenu() {
-    return Menu(items: [
+  List<ContextMenuItem> _copySubmenu() {
+    return [
       _copyMenuAction(localizations.copyUrl, _RequestCopyMenuAction.copyUrl),
       _copyMenuAction(localizations.copyRawRequest, _RequestCopyMenuAction.rawRequest),
       _copyMenuAction(localizations.copyRequestResponse, _RequestCopyMenuAction.requestResponse),
       _copyMenuAction(localizations.copyAsPythonRequests, _RequestCopyMenuAction.pythonRequests),
       _copyMenuAction(localizations.copyAsFetch, _RequestCopyMenuAction.fetch),
-    ]);
+    ];
   }
 
-  Menu _exportSubmenu() {
-    return Menu(items: [
+  List<ContextMenuItem> _exportSubmenu() {
+    return [
       _exportMenuAction(localizations.request, _RequestExportMenuAction.request),
       _exportMenuAction(localizations.requestBody, _RequestExportMenuAction.requestBody),
-      MenuItem.separator(),
+      ContextMenuItem.separator(),
       _exportMenuAction(localizations.response, _RequestExportMenuAction.response),
       _exportMenuAction(localizations.responseBody, _RequestExportMenuAction.responseBody),
-      MenuItem.separator(),
+      ContextMenuItem.separator(),
       _exportMenuAction('HAR', _RequestExportMenuAction.har),
-    ]);
+    ];
   }
 
-  MenuItem _menuAction(String label, _RequestMenuAction action) {
-    return MenuItem(label: label, onClick: (_) => _onMenuAction(action));
+  ContextMenuItem _menuAction(String label, _RequestMenuAction action) {
+    return ContextMenuItem.normal(label: label, onClick: () => _onMenuAction(action));
   }
 
-  MenuItem _copyMenuAction(String label, _RequestCopyMenuAction action) {
-    return MenuItem(label: label, onClick: (_) => _onCopyMenuAction(action));
+  ContextMenuItem _copyMenuAction(String label, _RequestCopyMenuAction action) {
+    return ContextMenuItem.normal(label: label, onClick: () => _onCopyMenuAction(action));
   }
 
-  MenuItem _exportMenuAction(String label, _RequestExportMenuAction action) {
-    return MenuItem(label: label, onClick: (_) => _onExportMenuAction(action));
+  ContextMenuItem _exportMenuAction(String label, _RequestExportMenuAction action) {
+    return ContextMenuItem.normal(label: label, onClick: () => _onExportMenuAction(action));
   }
 
   Future<void> _onMenuAction(_RequestMenuAction action) async {
@@ -411,69 +412,67 @@ class _RequestWidgetState extends State<RequestWidget> {
   }
 
   ///高亮
-  Menu highlightMenu() {
-    return Menu(
-      items: [
-        MenuItem(
-            label: localizations.red,
-            onClick: (_) {
-              setState(() {
-                highlightColor = Colors.red;
-              });
-            }),
-        MenuItem(
-            label: localizations.yellow,
-            onClick: (_) {
-              setState(() {
-                highlightColor = Colors.yellow.shade600;
-              });
-            }),
-        MenuItem(
-            label: localizations.blue,
-            onClick: (_) {
-              setState(() {
-                highlightColor = Colors.blue;
-              });
-            }),
-        MenuItem(
-            label: localizations.green,
-            onClick: (_) {
-              setState(() {
-                highlightColor = Colors.green;
-              });
-            }),
-        MenuItem(
-            label: localizations.gray,
-            onClick: (_) {
-              setState(() {
-                highlightColor = Colors.grey;
-              });
-            }),
-        MenuItem.separator(),
-        MenuItem.checkbox(
-            label: localizations.autoRead,
-            checked: AppConfiguration.current?.autoReadEnabled,
-            onClick: (_) {
-              setState(() {
-                AppConfiguration.current?.autoReadEnabled = !AppConfiguration.current!.autoReadEnabled;
-              });
-            }),
-        MenuItem.separator(),
-        MenuItem(
-            label: localizations.reset,
-            onClick: (_) {
-              setState(() {
-                highlightColor = null;
-                autoReadRequests.clear();
-              });
-            }),
-        MenuItem(
-            label: localizations.keyword,
-            onClick: (_) {
-              showDialog(context: context, builder: (BuildContext context) => const DesktopKeywordHighlight());
-            }),
-      ],
-    );
+  List<ContextMenuItem> highlightMenu() {
+    return [
+      ContextMenuItem.normal(
+          label: localizations.red,
+          onClick: () {
+            setState(() {
+              highlightColor = Colors.red;
+            });
+          }),
+      ContextMenuItem.normal(
+          label: localizations.yellow,
+          onClick: () {
+            setState(() {
+              highlightColor = Colors.yellow.shade600;
+            });
+          }),
+      ContextMenuItem.normal(
+          label: localizations.blue,
+          onClick: () {
+            setState(() {
+              highlightColor = Colors.blue;
+            });
+          }),
+      ContextMenuItem.normal(
+          label: localizations.green,
+          onClick: () {
+            setState(() {
+              highlightColor = Colors.green;
+            });
+          }),
+      ContextMenuItem.normal(
+          label: localizations.gray,
+          onClick: () {
+            setState(() {
+              highlightColor = Colors.grey;
+            });
+          }),
+      ContextMenuItem.separator(),
+      ContextMenuItem.checkbox(
+          label: localizations.autoRead,
+          checked: AppConfiguration.current?.autoReadEnabled ?? false,
+          onClick: () {
+            setState(() {
+              AppConfiguration.current?.autoReadEnabled = !AppConfiguration.current!.autoReadEnabled;
+            });
+          }),
+      ContextMenuItem.separator(),
+      ContextMenuItem.normal(
+          label: localizations.reset,
+          onClick: () {
+            setState(() {
+              highlightColor = null;
+              autoReadRequests.clear();
+            });
+          }),
+      ContextMenuItem.normal(
+          label: localizations.keyword,
+          onClick: () {
+            showDialog(context: context, builder: (BuildContext context) => const DesktopKeywordHighlight());
+          }),
+    ];
   }
 
   //显示高级重发
